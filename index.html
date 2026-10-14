@@ -1046,13 +1046,13 @@ function distTo(o, px, pz) {
 
 /* ================= UI ================= */
 function renderMenu() {
-  const next = Math.min(save.unlocked, STAGES.length) - 1;
+  let next = STAGES.findIndex((s, i) => !(save.stars[i] > 0)); if (next < 0) next = 0;
   $('#bPlaySub').textContent = `WORLD ${next + 1} · ${STAGES[next].name}`; $('#bEndSub').textContent = `BEST ${save.best}`; $('#bSkinSub').textContent = `◆ ${save.gems}`;
 }
 function renderMap() {
   const total = Object.values(save.stars).reduce((a, b) => a + b, 0);
   $('#mapSub').textContent = `★ ${total} / ${STAGES.length * 3}`;
-  $('#stages').innerHTML = STAGES.map((s, i) => { const lock = i >= save.unlocked, st = save.stars[i] || 0;
+  $('#stages').innerHTML = STAGES.map((s, i) => { const lock = false, st = save.stars[i] || 0;
     return `<button class="st ${lock ? 'locked' : ''}" data-st="${i}" style="background:${s.card}"><div class="num">${lock ? '🔒' : i + 1}</div><div class="info"><b>${s.name}</b><span>${lock ? 'Clear the previous world' : s.hint}</span></div><div class="stars">${[0, 1, 2].map(k => k < st ? '★' : '☆').join('')}</div></button>`; }).join('');
 }
 function renderSkins() {
@@ -1065,7 +1065,7 @@ $('#bPlay').onclick = () => { AU.init(); renderMap(); show('map'); };
 $('#bEndless').onclick = () => prepare('endless', 0);
 $('#bSkins').onclick = () => { renderSkins(); show('skinsS'); };
 document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => { renderMenu(); show('menu'); });
-$('#stages').addEventListener('click', e => { const b = e.target.closest('.st'); if (!b) return; const i = +b.dataset.st; if (i >= save.unlocked) { b.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], 220); return; } prepare('stage', i); });
+$('#stages').addEventListener('click', e => { const b = e.target.closest('.st'); if (!b) return; const i = +b.dataset.st; prepare('stage', i); });
 $('#skins').addEventListener('click', e => { const b = e.target.closest('.skin'); if (!b) return; const s = SKINS.find(x => x.id === b.dataset.s);
   if (!save.owned[s.id]) { if (save.gems < s.cost) { b.animate([{ transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'none' }], 200); return; } save.gems -= s.cost; save.owned[s.id] = 1; AU.init(); AU.win(); }
   save.skin = s.id; store(); applySkin(); renderSkins(); });
