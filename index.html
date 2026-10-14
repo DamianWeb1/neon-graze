@@ -210,7 +210,7 @@ const camera = new THREE.PerspectiveCamera(62, 1, .1, 400);
 scene.fog = new THREE.Fog(0x000000, 20, 95);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222244, .6); scene.add(hemi);
 const sunL = new THREE.DirectionalLight(0xffffff, .7); sunL.position.set(-3, 8, 4); scene.add(sunL);
-let composer = null, bloom = null, useBloom = !!(THREE.EffectComposer && THREE.UnrealBloomPass);
+let composer = null, bloom = null, useBloom = !!(THREE.EffectComposer && THREE.UnrealBloomPass) && renderer.capabilities.isWebGL2 && !/[?&]lite\b/.test(location.search);
 if (useBloom) {
   try {
     composer = new THREE.EffectComposer(renderer);
@@ -564,10 +564,10 @@ const ballCore = new THREE.Mesh(new THREE.SphereGeometry(R, 48, 32), new THREE.S
     vec3 p = vP * 6.0; float n = fbm3(p + vec3(0.0, t*1.6, t*0.9)); float n2v = fbm3(p*1.8 - vec3(t*1.2, 0.0, t*0.5));
     vec3 col = mix(a, b, smoothstep(0.35, 0.7, n));
     col += b * pow(smoothstep(0.55, 0.8, n2v), 2.0) * .8;
-    float fr = pow(1.0 - max(dot(normalize(vN), normalize(vV)), 0.0), 2.2);
+    float fr = pow(clamp(1.0 - dot(normalize(vN), normalize(vV)), 0.0, 1.0), 2.2);
     col = col * (0.45 + 0.4*(1.0-fr)) + rim * fr * 1.1;
     if (hue > 0.0) col = hsh(col, t*1.5);
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(clamp(col, 0.0, 4.0), 1.0);
   }`
 }));
 ball.add(ballCore);
