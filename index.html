@@ -973,7 +973,7 @@ function banner(top, name, hint, color) {
 function show(id) { ['menu', 'map', 'skinsS', 'ready', 'clear', 'fail'].forEach(s => $('#' + s).classList.toggle('show', s === id)); $('#hud').classList.toggle('on', !id || id === 'ready'); }
 function prepare(mode, si) {
   AU.init(); clearWorld();
-  Object.assign(RUN, { od: 0, odReady: false, odT: 0, odSlow: 1, shield: 0, magT: 0, slowT: 0, invT: 0, puGuarantee: !(save.tips && save.tips.power), seen: {}, mode, si, state: 'ready', speed: 4, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: -30, bx: 0, tx: 0, lv: 0, pull: 0 });
+  Object.assign(RUN, { lastPU: -999, od: 0, odReady: false, odT: 0, odSlow: 1, shield: 0, magT: 0, slowT: 0, invT: 0, puGuarantee: !(save.tips && save.tips.power), seen: {}, mode, si, state: 'ready', speed: 4, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: -30, bx: 0, tx: 0, lv: 0, pull: 0 });
   setEnv(si, true); trailHist.length = 0;
   $('#stName').textContent = mode === 'endless' ? 'ENDLESS' : `WORLD ${si + 1}`; $('#prog').style.visibility = mode === 'endless' ? 'hidden' : 'visible';
   updHud(); show('ready');
@@ -1209,8 +1209,13 @@ function makePickup(type, x, z) {
   g.position.set(x, 0, z); world.add(g); pickups.push({ g, core, type, halo });
 }
 function maybePowerup(gemsBefore) {
-  if (RUN.mode === 'stage' && RUN.dist / stageOf().len < .12) return;
-  if (Math.random() > (RUN.puGuarantee ? 1 : .14)) return;
+  // rare: long cooldown, never while one is active, never back to back
+  const prog = RUN.mode === 'stage' ? RUN.dist / stageOf().len : RUN.dist / 600;
+  if (prog < (RUN.puGuarantee ? .3 : .2)) return;
+  if (RUN.dist - (RUN.lastPU ?? -999) < 200) return;
+  if (RUN.shield || RUN.magT > 0 || RUN.slowT > 0 || pickups.length) return;
+  if (Math.random() > (RUN.puGuarantee ? 1 : .07)) return;
+  RUN.lastPU = RUN.dist;
   const newGems = gems.slice(gemsBefore); if (!newGems.length) return;
   const g = newGems[newGems.length - 1]; world.remove(g.g); gems.splice(gems.indexOf(g), 1); RUN.gemsSpawned--;
   const types = Object.keys(PU); makePickup(RUN.puGuarantee ? 'shield' : pick(types), g.g.position.x, g.g.position.z); RUN.puGuarantee = false;
