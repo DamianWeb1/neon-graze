@@ -698,11 +698,11 @@ const PAT = {
   wall: z => { const gap = clamp(1.8 - lvl() * .1, 1.15, 1.8); gapWall(z, gap, rand(-HB + gap / 2, HB - gap / 2)); return 6; },
   slider: z => { const w = rand(1.6, 2.4); wallBlock(0, z, w, 1, .7, { upd: (o, dt) => { o.ph = (o.ph ?? rand(0, 6)) + dt * (1.5 + lvl() * .15); o.x = Math.sin(o.ph) * (HALFW - w / 2); } }); return 7; },
   pillars: z => { const a = rand(-1.7, -.5), b = rand(.5, 1.7); wallBlock(a, z, .7, 1.6, .7); wallBlock(b, z, .7, 1.6, .7); addGem((a + b) / 2, z - 3); return 7; },
-  zigzag: z => { let s = Math.random() < .5 ? -1 : 1; for (let i = 0; i < 3; i++) { wallBlock(s * (HALFW / 2 + .25), z - i * 6.5, HALFW + .4); addGem(-s * 1.5, z - i * 6.5); s *= -1; } return 19; },
+  zigzag: z => { let s = Math.random() < .5 ? -1 : 1; const sp = Math.max(8, RUN.speed * .5); for (let i = 0; i < 3; i++) { wallBlock(s * (HALFW / 2 + .15), z - i * sp, HALFW + .2); addGem(-s * 1.5, z - i * sp); s *= -1; } return sp * 2 + 5; },
   gates: z => { let gx = rand(-1.3, 1.3); for (let i = 0; i < 3; i++) { gapWall(z - i * 7, 1.4 - i * .05, gx, .6); gx = clamp(gx + rand(-1.2, 1.2), -1.6, 1.6); } return 21; },
   laser: (z, ph) => {
     // two half-beams that take turns: one side is always safe
-    const P = clamp(2.3 - lvl() * .07, 1.7, 2.3), phase = ph ?? rand(0, P);
+    const P = clamp(2.8 - lvl() * .06, 2.2, 2.8), phase = ph ?? rand(0, P);
     [-1, 1].forEach(side => {
       const g = new THREE.Group();
       const beam = new THREE.Mesh(boxGeo, emissive('#ff2244', 3, { transparent: true })); beam.scale.set(HALFW, .09, .09); beam.position.y = .45; g.add(beam);
@@ -716,7 +716,7 @@ const PAT = {
     });
     addGem(0, z - 3); return 8;
   },
-  laser2: z => { PAT.laser(z, 0); PAT.laser(z - 10, 1.1); return 18; },
+  laser2: z => { const ph = rand(0, 2); PAT.laser(z, ph); PAT.laser(z - 16, ph); return 24; },
   traffic: z => {
     const n = 1 + (lvl() > 4 ? 1 : 0);
     for (let i = 0; i < n; i++) {
@@ -759,7 +759,7 @@ const PAT = {
     addOb({ g, x: base, z, shape: 'circle', r: .5, upd: (o, dt) => { o.t += dt; o.x = clamp(base + Math.sin(o.t * sp + ph) * amp, -HB, HB); const s = 1 + Math.sin(o.t * 5) * .1; bell.scale.set(s, 2 - s, s); g.children[0].position.y = .9 + Math.sin(o.t * 2.5) * .12; } });
     return 7;
   },
-  jelly2: z => { PAT.jelly(z, -1.4); PAT.jelly(z - 6, 1.4); PAT.jelly(z - 12, 0); addGem(0, z - 3); return 17; },
+  jelly2: z => { PAT.jelly(z, -1.4); PAT.jelly(z - 9, 1.4); PAT.jelly(z - 18, 0); addGem(0, z - 4.5); return 23; },
   mines: z => { const n = 2 + (lvl() > 3 ? 1 : 0); const xs = [-1.7, 0, 1.7].sort(() => Math.random() - .5).slice(0, n);
     xs.forEach((x, i) => { const g = new THREE.Group(); const core = new THREE.Mesh(new THREE.IcosahedronGeometry(.35, 0), emissive('#ff3355', 1.4)); core.position.y = .6; g.add(core);
       for (let k = 0; k < 8; k++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.06, .3, 4), emissive('#ffd1d9', 1)); const d = new THREE.Vector3(Math.cos(k * .8) * Math.sin(k), Math.cos(k), Math.sin(k * .8) * Math.sin(k)).normalize(); sp.position.copy(d.clone().multiplyScalar(.42)).add(new THREE.Vector3(0, .6, 0)); sp.lookAt(d.clone().multiplyScalar(2).add(new THREE.Vector3(0, .6, 0))); sp.rotateX(Math.PI / 2); g.add(sp); }
@@ -786,12 +786,12 @@ const PAT = {
   },
   fireball2: z => { const xs = [-1.5, 0, 1.5].sort(() => Math.random() - .5); PAT.fireball(z, xs[0]); PAT.fireball(z - 6, xs[1]); PAT.fireball(z - 12); addGem(xs[2], z - 3); return 16; },
   pits: z => { const cols = 4, cw = TW / cols, rows = 3; let open = Math.floor(rand(0, cols));
-    for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) { if (c === open) continue; const g = new THREE.Group();
+    for (let r = 0; r < rows; r++) { const open2 = open === cols - 1 ? open - 1 : open + 1; for (let c = 0; c < cols; c++) { if (c === open || c === open2) continue; const g = new THREE.Group();
         const pit = new THREE.Mesh(new THREE.PlaneGeometry(cw * .94, 1.9), basic('#050101')); pit.rotation.x = -Math.PI / 2; pit.position.y = .02; g.add(pit);
         const gl = new THREE.Mesh(new THREE.PlaneGeometry(cw * .98, 2), basic('#ff4d1a', { transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false })); gl.rotation.x = -Math.PI / 2; gl.position.y = .015; g.add(gl);
-        addOb({ g, x: -HALFW + cw * (c + .5), z: z - r * 2.2, w: cw * .8, d: 1.7, pit: true, upd: (o, dt) => { o.t += dt; gl.material.opacity = .4 + Math.sin(o.t * 5 + c) * .2; } }); }
-      addGem(-HALFW + cw * (open + .5), z - r * 2.2); open = clamp(open + (Math.random() < .5 ? -1 : 1), 0, cols - 1); }
-    return rows * 2.2 + 4; },
+        addOb({ g, x: -HALFW + cw * (c + .5), z: z - r * 5, w: cw * .8, d: 1.7, pit: true, upd: (o, dt) => { o.t += dt; gl.material.opacity = .4 + Math.sin(o.t * 5 + c) * .2; } }); }
+      addGem(-HALFW + cw * (open + .5), z - r * 5); open = clamp(open + (Math.random() < .5 ? -1 : 1), 0, cols - 1); }
+    return rows * 5 + 4; },
   magma: z => { const xs = [-1.8, -.6, .6, 1.8]; const skip = Math.floor(rand(0, 4));
     xs.forEach((x, i) => { if (i === skip) return; const g = new THREE.Group(); const col = new THREE.Mesh(new THREE.CylinderGeometry(.38, .45, 2.4, 8), emissive('#ff4d1a', 1.5)); col.position.y = 1.2; col.scale.y = .02; g.add(col); const mk = floorMark(0, 0, .5, '#ffb02e'); g.add(mk);
       addOb({ g, x, z: z - (i % 2) * 1.6, shape: 'circle', r: .4, solid: false, upd: (o, dt) => { o.t += dt; const up = o.z > -19; const k = up ? Math.min(1, col.scale.y + dt * 6) : .02; col.scale.y = k; col.position.y = 1.2 * k; o.solid = k > .4; mk.material.opacity = up ? .15 : .5 + Math.sin(o.t * 12) * .4; } }); });
@@ -799,7 +799,7 @@ const PAT = {
   asteroid: (z, x0) => { const g = new THREE.Group(); const r = rand(.45, .75); const a = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), emissive('#6a6080', .25, { roughness: .9 })); a.position.y = r + .1; g.add(a);
     const vx = rand(-1.2, 1.2) * (1 + lvl() * .08), x = x0 ?? rand(-HB, HB), sp = new THREE.Vector3(rand(-2, 2), rand(-2, 2), rand(-2, 2));
     addOb({ g, x, z, shape: 'circle', r: r * .85, upd: (o, dt) => { o.x += vx * dt; if (Math.abs(o.x) > HB + .4) o.x = -Math.sign(o.x) * (HB + .4); a.rotation.x += sp.x * dt; a.rotation.y += sp.y * dt; } }); return 5; },
-  asteroid2: z => { for (let i = 0; i < 4; i++) PAT.asteroid(z - i * 4, rand(-HB, HB)); addGem(0, z - 8); return 18; },
+  asteroid2: z => { for (let i = 0; i < 4; i++) PAT.asteroid(z - i * 6, rand(-HB, HB)); addGem(0, z - 9); return 24; },
   gravity: z => { const side = Math.random() < .5 ? -1 : 1; const g = new THREE.Group(); const hole = new THREE.Mesh(new THREE.SphereGeometry(.9, 24, 16), basic('#000000')); hole.position.y = 1.2; g.add(hole);
     const disk = new THREE.Mesh(new THREE.RingGeometry(1.1, 2.6, 48), basic('#ff4fd8', { transparent: true, opacity: .7, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false })); disk.position.y = 1.2; disk.rotation.x = 1.3; g.add(disk); g.add(glow(0x8a5cff, 7, .7));
     addOb({ g, x: side * (HALFW + 2.4), z, shape: 'none', solid: false, upd: (o, dt) => { disk.rotation.z += dt * 3; if (Math.abs(o.z) < 16 && RUN.state === 'play') RUN.pull += side * 2.4 * (1 - Math.abs(o.z) / 16); } });
@@ -809,10 +809,10 @@ const PAT = {
     const L = mk(), Rr = mk();
     [[L, -1], [Rr, 1]].forEach(([g, s]) => addOb({ g, x: 0, z, w: 5, d: .5, upd: (o, dt) => { o.t += dt; const c = Math.sin(o.t * sp + ph) * 1.6; o.x = c + s * (gap / 2 + 2.5); } }));
     return 7; },
-  rings: z => { for (let i = 0; i < 3; i++) { const x = rand(-1.6, 1.6), zz = z - i * 7; const g = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(.7, .05, 8, 40), emissive('#2ef2ff', 3)); ring.position.y = .8; g.add(ring);
+  rings: z => { for (let i = 0; i < 3; i++) { const x = rand(-1.6, 1.6), zz = z - i * 10; const g = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(.7, .05, 8, 40), emissive('#2ef2ff', 3)); ring.position.y = .8; g.add(ring);
       addOb({ g, x, z: zz, shape: 'ring', solid: false, upd: (o, dt) => { ring.rotation.z += dt * 2; if (!o.done && o.z > -.2 && o.z < .6 && RUN.state === 'play' && Math.abs(RUN.bx - o.x) < .55) { o.done = true; warpBonus(o); } } });
       wallBlock(x > 0 ? x - 1.6 : x + 1.6, zz, .6, 1.2, .6); }
-    return 21; }
+    return 30; }
 ,
   pendulum: z => {
     const g = new THREE.Group(), H = 3.4, L = 2.9;
@@ -868,17 +868,17 @@ const PAT = {
     return 10;
   },
   sweeper: z => {
-    const side = Math.random() < .5 ? -1 : 1, px0 = side * (HALFW + .2), L = TW - .4; const g = new THREE.Group();
+    const side = Math.random() < .5 ? -1 : 1, px0 = side * (HALFW + .2), L = 3.3; const g = new THREE.Group();
     const post = new THREE.Mesh(new THREE.CylinderGeometry(.2, .26, .9, 12), metalMat); post.position.y = .45; g.add(post);
     const pv = new THREE.Group(); pv.position.y = .35; g.add(pv); const beam = new THREE.Mesh(boxGeo, emissive('#ff2244', 3)); beam.scale.set(L, .1, .1); beam.position.x = -side * L / 2; pv.add(beam);
     const halo = new THREE.Mesh(boxGeo, basic('#ff5577', { transparent: true, opacity: .25, blending: THREE.AdditiveBlending, depthWrite: false })); halo.scale.set(L, .3, .3); halo.position.x = -side * L / 2; pv.add(halo);
     const spd = 1.3 + lvl() * .08, ph = rand(0, 6);
     addOb({ g, x: px0, z, shape: 'custom', upd: (o, dt) => { o.t += dt; o.a = Math.sin(o.t * spd + ph) * 1.0; pv.rotation.y = o.a; },
       dist: (o, px, pz) => { const ex = o.x - side * Math.cos(o.a) * L, ez = o.z + side * Math.sin(o.a) * L; const bx = ex - o.x, bz = ez - o.z; const t = clamp(((px - o.x) * bx + (pz - o.z) * bz) / (bx * bx + bz * bz), 0, 1); return Math.hypot(px - (o.x + bx * t), pz - (o.z + bz * t)) - .08; } });
-    addGem(-side * 1.2, z - 4); return 9;
+    addGem(-side * 1.7, z - 4); return 9;
   },
   snake: z => {
-    const n = 8, amp = 1.7, sp = 1.4 + lvl() * .08, ph = rand(0, 6);
+    const n = 8, amp = 1.25, sp = 1.3 + lvl() * .07, ph = rand(0, 6);
     for (let i = 0; i < n; i++) { const g = new THREE.Group(); const s = new THREE.Mesh(new THREE.SphereGeometry(i === 0 ? .4 : .32 - i * .015, 16, 12), i === 0 ? hotMat : obMat); s.position.y = .4; g.add(s);
       if (i === 0) [-1, 1].forEach(e => { const eye = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), basic('#000000')); eye.position.set(e * .16, .55, .3); g.add(eye); });
       addOb({ g, x: 0, z: z - i * .62, shape: 'circle', r: i === 0 ? .36 : .28, upd: (o, dt) => { o.t += dt; o.x = Math.sin(o.t * sp + ph - i * .45) * amp; } }); }
