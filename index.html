@@ -60,6 +60,27 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .newob{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:'Chakra Petch',monospace;font-weight:700;font-size:16px;letter-spacing:3px;white-space:nowrap;padding:8px 16px;border-radius:999px;background:var(--glass);border:1.5px solid var(--accent);box-shadow:0 0 18px var(--accent);backdrop-filter:blur(6px);animation:newob 2.4s ease both}
 .newob b{color:var(--accent);margin-right:8px}
 @keyframes newob{0%{opacity:0;transform:translate(-50%,-12px) scale(.8)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.pus{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+.pus span{position:relative;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:17px;background:var(--glass);border:1.5px solid var(--c);box-shadow:0 0 12px var(--c)}
+.pus i{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-family:'Chakra Petch',monospace;font-size:10px;font-weight:700;background:var(--c);color:#000;border-radius:8px;padding:0 4px}
+.odwrap{position:absolute;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:10px;pointer-events:none;opacity:0;transition:opacity .3s}
+.hud.on ~ .odwrap{opacity:1}
+.hud.on ~ #mute{opacity:0;pointer-events:none}
+.odbar{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden;margin-right:56px}
+.odbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff7a00,#ffd23f);box-shadow:0 0 10px #ffb02e;border-radius:5px;transition:width .2s}
+.odwrap.live .odbar i{background:linear-gradient(90deg,#fff27a,#ffffff)}
+.odbtn{position:absolute;right:0;bottom:-6px;width:64px;height:64px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#fff3a0,#ff9a00 60%,#c24a00);font-size:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 0 0 3px rgba(255,255,255,.25),0 0 26px #ff9a00;pointer-events:none;opacity:.25;filter:grayscale(1);transform:scale(.8);transition:all .25s}
+.odbtn b{font-size:7px;letter-spacing:1px;font-family:'Chakra Petch',monospace;color:#3a1600}
+.odbtn.ready{pointer-events:auto;opacity:1;filter:none;transform:scale(1);animation:odp .8s ease-in-out infinite}
+@keyframes odp{50%{transform:scale(1.1);box-shadow:0 0 0 6px rgba(255,210,63,.35),0 0 40px #ffb02e}}
+.tip{position:absolute;left:50%;top:calc(120px + env(safe-area-inset-top,0px));transform:translate(-50%,-10px);z-index:7;width:min(340px,88vw);display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;
+  background:rgba(14,8,34,.82);border:1.5px solid var(--accent);box-shadow:0 0 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:all .35s}
+.tip.show{opacity:1;transform:translate(-50%,0)}
+.tip .ti{font-size:26px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);flex:none}
+.tip b{display:block;font-weight:900;font-size:16px}.tip span{display:block;font-size:13px;color:var(--soft);line-height:1.3}
+.tip .hand{position:absolute;left:50%;top:115%;font-size:34px;animation:handsw 1.4s ease-in-out infinite}
+@keyframes handsw{0%,100%{transform:translateX(-60px)}50%{transform:translateX(60px)}}
 .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5}
 .flash.go{animation:flash .5s ease-out}
 @keyframes flash{0%{opacity:.8}100%{opacity:0}}
@@ -131,10 +152,12 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
   <div class="hud" id="hud">
     <div class="hrow">
       <div class="score"><span id="sc">0</span><small>SCORE</small></div>
-      <div class="hright"><div class="gems">◆ <span id="gm">0</span></div><div class="combo" id="combo">x2</div></div>
+      <div class="hright"><div class="gems">◆ <span id="gm">0</span></div><div class="combo" id="combo">x2</div><div class="pus" id="pus"></div></div>
     </div>
     <div class="prog" id="prog"><span id="stName">STAGE 1</span><div class="bar"><i id="pfill"></i></div><span id="pct">0%</span></div>
   </div>
+  <div class="odwrap" id="odwrap"><div class="odbar"><i id="odfill"></i></div><button class="odbtn" id="odbtn" aria-label="Overdrive">🔥<b>OVERDRIVE</b></button></div>
+  <div class="tip" id="tip"></div>
   <div class="banner" id="banner"><b id="banTop">STAGE 1</b><span id="banName"></span><em id="banHint"></em></div>
   <div id="pops"></div>
   <div class="flash" id="flash"></div>
@@ -937,7 +960,7 @@ const AU = {
 /* ================= game ================= */
 const RUN = { mode: 'stage', si: 0, env: 0, state: 'menu', speed: 9, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: 0, bx: 0, tx: 0, lv: 0, pull: 0, roll: 0 };
 const curve = { x: 0, y: 0, tx: 0, ty: 0, t: 0 };
-function clearWorld() { while (world.children.length) { disposeObj(world.children[0]); world.remove(world.children[0]); } obs.length = 0; gems.length = 0; parts.forEach(p => scene.remove(p.m)); parts.length = 0; }
+function clearWorld() { pickups.forEach(p => world.remove(p.g)); pickups.length = 0; while (world.children.length) { disposeObj(world.children[0]); world.remove(world.children[0]); } obs.length = 0; gems.length = 0; parts.forEach(p => scene.remove(p.m)); parts.length = 0; }
 function stageOf() { return STAGES[RUN.env]; }
 function setEnv(i, instant) {
   RUN.env = i; buildEnv(i); setPalette(STAGES[i], instant); floorU.mode.value = STAGES[i].mode; skyU.mode.value = STAGES[i].mode;
@@ -950,18 +973,19 @@ function banner(top, name, hint, color) {
 function show(id) { ['menu', 'map', 'skinsS', 'ready', 'clear', 'fail'].forEach(s => $('#' + s).classList.toggle('show', s === id)); $('#hud').classList.toggle('on', !id || id === 'ready'); }
 function prepare(mode, si) {
   AU.init(); clearWorld();
-  Object.assign(RUN, { seen: {}, mode, si, state: 'ready', speed: 4, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: -30, bx: 0, tx: 0, lv: 0, pull: 0 });
+  Object.assign(RUN, { od: 0, odReady: false, odT: 0, odSlow: 1, shield: 0, magT: 0, slowT: 0, invT: 0, puGuarantee: !(save.tips && save.tips.power), seen: {}, mode, si, state: 'ready', speed: 4, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: -30, bx: 0, tx: 0, lv: 0, pull: 0 });
   setEnv(si, true); trailHist.length = 0;
   $('#stName').textContent = mode === 'endless' ? 'ENDLESS' : `WORLD ${si + 1}`; $('#prog').style.visibility = mode === 'endless' ? 'hidden' : 'visible';
   updHud(); show('ready');
 }
 function go() {
+  setTimeout(() => tip('steer'), 600); renderPU(); renderMeter();
   RUN.state = 'play'; show(null); AU.start(RUN.env);
   const st = stageOf(); banner(RUN.mode === 'endless' ? 'ENDLESS' : `WORLD ${RUN.si + 1}`, st.name, st.hint, st.ui);
   fpsProbe = { t: 0, n: 0 };
 }
 function die(at) {
-  RUN.state = 'dead'; slowmo = .12;
+  RUN.state = 'dead'; slowmo = .12; RUN.odT = 0; RUN.shield = 0; renderMeter(); applySkin(); $('#pus').innerHTML = '';
   burst(new THREE.Vector3(RUN.bx, .4, 0), ballU.b.value.getHex(), 46, 10); burst(at, pal.ob.getHex(), 18, 6);
   shake(1); flash(); AU.crash(); AU.stop(); if (navigator.vibrate) navigator.vibrate([60, 40, 90]);
   const s = Math.floor(RUN.score); let nb = false;
@@ -976,7 +1000,7 @@ function die(at) {
   }, 950);
 }
 function clearStage() {
-  RUN.state = 'clear'; AU.win(); AU.stop(); flash(); shake(.3);
+  RUN.state = 'clear'; RUN.odT = 0; renderMeter(); applySkin(); $('#pus').innerHTML = ''; AU.win(); AU.stop(); flash(); shake(.3);
   obs.forEach(o => burst(new THREE.Vector3(o.x, .6, o.z), pal.ob.getHex(), 6, 5)); while (world.children.length) world.remove(world.children[0]); obs.length = 0; gems.length = 0;
   const ratio = RUN.gemsSpawned ? RUN.gems / RUN.gemsSpawned : 1, stars = 1 + (ratio >= .5 ? 1 : 0) + (ratio >= .8 ? 1 : 0);
   save.stars[RUN.si] = Math.max(save.stars[RUN.si] || 0, stars); save.unlocked = Math.max(save.unlocked, Math.min(STAGES.length, RUN.si + 2)); save.gems += RUN.gems + stars * 10; store();
@@ -1080,7 +1104,7 @@ function frame(now) {
     if (keys.ArrowRight || keys.d) RUN.tx = clamp(RUN.tx + 7 * dt, -HB, HB);
     RUN.tx = clamp(RUN.tx + RUN.pull * dt, -HB, HB); RUN.pull = 0;
     const tgt = RUN.mode === 'stage' ? lerp(st.s0, st.s1, Math.pow(clamp(RUN.dist / st.len, 0, 1), .85)) : Math.min(38, 9 + RUN.dist * .014); RUN.speed = Math.min(tgt, RUN.speed + dt * 3.2);
-    RUN.dist += RUN.speed * dt / 2; RUN.score += RUN.speed * dt * .5 * (1 + (RUN.combo - 1) * .25);
+    RUN.dist += RUN.speed * dt / 2; RUN.score += RUN.speed * dt * .5 * (1 + (RUN.combo - 1) * .25) * (RUN.odT > 0 ? 2 : 1);
     RUN.lv = RUN.mode === 'stage' ? RUN.si * 1.2 + RUN.dist / st.len * 3 : Math.min(10, RUN.dist / 220);
     if (RUN.mode === 'endless') { const e = Math.floor(RUN.dist / 600) % STAGES.length; if (e !== RUN.env) { setEnv(e, false); flash(); AU.start(e); banner('ENTERING', STAGES[e].name, '', STAGES[e].ui); } }
     if (RUN.comboT > 0) { RUN.comboT -= rdt; if (RUN.comboT <= 0 && RUN.combo > 1) { RUN.combo = 1; updHud(); } }
@@ -1093,26 +1117,47 @@ function frame(now) {
         const fresh = pats.slice(0, unlocked).find(k => !RUN.seen[k]);
         const k = fresh || (Math.random() < .45 ? avail[avail.length - 1] : pick(avail));
         if (!RUN.seen[k]) { RUN.seen[k] = 1; if (Object.keys(RUN.seen).length > 2) newPop(PAT_NAMES[k] || k.toUpperCase()); }
-        const len = PAT[k](SPAWN_Z); RUN.nextSpawn -= len + clamp(15 - RUN.lv * .55, 9, 15);
+        const gb = gems.length; const len = PAT[k](SPAWN_Z); maybePowerup(gb); RUN.nextSpawn -= len + clamp(15 - RUN.lv * .55, 9, 15);
+        if (!(save.tips && save.tips.graze) && Object.keys(RUN.seen).length >= 1) setTimeout(() => tip('graze'), 1800);
       }
     }
     if (Math.floor(T.t * 4) !== Math.floor((T.t - dt) * 4)) updHud();
   } else if (RUN.state === 'menu' || RUN.state === 'ready') { RUN.speed = lerp(RUN.speed, RUN.state === 'menu' ? 10 : 6, .03); if (RUN.state === 'menu') RUN.tx = Math.sin(T.t * 1.1) * 1.6; }
   else if (RUN.state === 'clear') RUN.speed = lerp(RUN.speed, 60, .03);
-  const mv = (RUN.state === 'dead' || RUN.state === 'over' ? .25 : 1) * RUN.speed * dt;
+  if (RUN.state === 'play') {
+    if (RUN.odT > 0) { RUN.odT -= rdt; RUN.odSlow = lerp(RUN.odSlow, 1.25, rdt * 2); if (RUN.odT <= 0) endOD(); renderMeter(); }
+    if (RUN.magT > 0) { RUN.magT -= rdt; if (RUN.magT <= 0) renderPU(); }
+    if (RUN.slowT > 0) { RUN.slowT -= rdt; if (RUN.slowT <= 0) renderPU(); }
+    if (RUN.invT > 0) RUN.invT -= rdt;
+    if (Math.floor(T.t * 2) !== Math.floor((T.t - dt) * 2)) renderPU();
+  }
+  const tScale = (RUN.slowT > 0 ? .6 : 1) * (RUN.odT > 0 ? RUN.odSlow : 1);
+  bubble.visible = bubbleW.visible = !!RUN.shield && RUN.state === 'play'; bubbleW.rotation.y += rdt; bubble.material.opacity = .18 + Math.sin(T.t * 6) * .05;
+  odAura.material.uniforms.opacity.value = RUN.odT > 0 ? .9 : RUN.odReady ? .25 + Math.sin(T.t * 8) * .15 : 0;
+  const mv = (RUN.state === 'dead' || RUN.state === 'over' ? .25 : 1) * RUN.speed * dt * tScale;
   // obstacles
   for (let i = obs.length - 1; i >= 0; i--) {
     const o = obs[i]; o.z += mv; if (o.upd) o.upd(o, dt); o.g.position.set(o.x, 0, o.z);
     if (RUN.state === 'play' && o.shape !== 'none' && o.shape !== 'ring' && Math.abs(o.z) < 4) {
       const d = distTo(o, RUN.bx, 0);
-      if (o.solid && d < R * .9) { die(new THREE.Vector3(RUN.bx, .5, 0)); break; }
-      if (o.solid && !o.grazed && !o.pit && d < R + .36) { o.grazed = true; RUN.grazes++; bumpCombo(); const pts = 15 * RUN.combo; RUN.score += pts; AU.graze(RUN.combo); pop(`${pick(['CLOSE!', 'GRAZE!', 'WHOA!', 'NICE!', 'INSANE!'])} +${pts}`, getComputedStyle(document.documentElement).getPropertyValue('--accent'), new THREE.Vector3(RUN.bx, 1.2, 0)); burst(new THREE.Vector3(RUN.bx, .4, 0), 0xffffff, 6, 3); if (navigator.vibrate) navigator.vibrate(12); }
+      if (o.solid && d < R * .9) {
+        if (RUN.odT > 0) { if (!o.pit) smash(o); continue; }
+        if (RUN.invT > 0) continue;
+        if (RUN.shield) { RUN.shield = 0; RUN.invT = 1.2; AU.shieldHit(); flash(); pop('SHIELD BROKE!', '#2ef2ff', new THREE.Vector3(RUN.bx, 1.2, 0)); if (!o.pit) smash(o); renderPU(); continue; }
+        die(new THREE.Vector3(RUN.bx, .5, 0)); break; }
+      if (o.solid && !o.grazed && !o.pit && RUN.odT <= 0 && d < R + .36) { o.grazed = true; RUN.grazes++; bumpCombo(); addMeter(.2); const pts = 15 * RUN.combo; RUN.score += pts; AU.graze(RUN.combo); pop(`${pick(['CLOSE!', 'GRAZE!', 'WHOA!', 'NICE!', 'INSANE!'])} +${pts}`, getComputedStyle(document.documentElement).getPropertyValue('--accent'), new THREE.Vector3(RUN.bx, 1.2, 0)); burst(new THREE.Vector3(RUN.bx, .4, 0), 0xffffff, 6, 3); if (navigator.vibrate) navigator.vibrate(12); }
     }
     if (o.z > 10) { world.remove(o.g); disposeObj(o.g); obs.splice(i, 1); }
   }
+  for (let i = pickups.length - 1; i >= 0; i--) {
+    const p = pickups[i]; p.g.position.z += mv; p.core.rotation.y += dt * 2.5; p.core.position.y = .7 + Math.sin(T.t * 3 + i) * .1; p.halo.scale.setScalar(1 + Math.sin(T.t * 5) * .1);
+    if (RUN.state === 'play' && Math.hypot(p.g.position.x - RUN.bx, p.g.position.z) < .75) { grabPickup(p); world.remove(p.g); pickups.splice(i, 1); continue; }
+    if (p.g.position.z > 10) { world.remove(p.g); pickups.splice(i, 1); }
+  }
   for (let i = gems.length - 1; i >= 0; i--) {
-    const g = gems[i]; g.g.position.z += mv; g.m.rotation.y += dt * 3; g.g.position.y = g.y + Math.sin(T.t * 4 + i) * .08;
-    if (RUN.state === 'play' && Math.hypot(g.g.position.x - RUN.bx, g.g.position.z) < .65) { RUN.gems++; const pts = 10 * RUN.combo; RUN.score += pts; AU.gem(); pop(`◆ +${pts}`, '#ffd23f', g.g.position.clone()); burst(g.g.position.clone(), 0xffd23f, 10, 4); world.remove(g.g); gems.splice(i, 1); updHud(); continue; }
+    const g = gems[i]; g.g.position.z += mv;
+    if (RUN.magT > 0 && RUN.state === 'play' && g.g.position.z > -14 && g.g.position.z < 2) { g.g.position.x = lerp(g.g.position.x, RUN.bx, rdt * 6); g.g.position.z = lerp(g.g.position.z, 0, rdt * 3); } g.m.rotation.y += dt * 3; g.g.position.y = g.y + Math.sin(T.t * 4 + i) * .08;
+    if (RUN.state === 'play' && Math.hypot(g.g.position.x - RUN.bx, g.g.position.z) < .65) { RUN.gems++; tip('gem'); addMeter(.04); const pts = 10 * RUN.combo * (RUN.odT > 0 ? 2 : 1); RUN.score += pts; AU.gem(); pop(`◆ +${pts}`, '#ffd23f', g.g.position.clone()); burst(g.g.position.clone(), 0xffd23f, 10, 4); world.remove(g.g); gems.splice(i, 1); updHud(); continue; }
     if (g.g.position.z > 10) { world.remove(g.g); gems.splice(i, 1); }
   }
   // ball
@@ -1150,6 +1195,83 @@ function frame(now) {
 }
 applySkin(); setEnv(0, true); renderMenu();
 requestAnimationFrame(frame);
+/* ================= overdrive, power-ups, tutorial ================= */
+const PU = { shield: { e: '🛡️', name: 'SHIELD', c: '#2ef2ff' }, magnet: { e: '🧲', name: 'MAGNET', c: '#ff4f6a' }, slow: { e: '⏳', name: 'SLOW-MO', c: '#b98cff' } };
+const pickups = [];
+function makePickup(type, x, z) {
+  const g = new THREE.Group(); const col = PU[type].c;
+  const core = new THREE.Group(); core.position.y = .7; g.add(core);
+  if (type === 'shield') { core.add(new THREE.Mesh(new THREE.SphereGeometry(.22, 20, 14), emissive(col, 2.2))); const r = new THREE.Mesh(new THREE.TorusGeometry(.36, .04, 8, 32), emissive('#ffffff', 2.6)); core.add(r); }
+  else if (type === 'magnet') { const m = new THREE.Mesh(new THREE.TorusGeometry(.24, .08, 10, 24, Math.PI), emissive(col, 2.2)); m.rotation.z = Math.PI; core.add(m); [-1, 1].forEach(s => { const tip = new THREE.Mesh(new THREE.BoxGeometry(.16, .14, .16), emissive('#ffffff', 2.6)); tip.position.set(s * .24, .02, 0); core.add(tip); }); }
+  else { [1, -1].forEach(s => { const c = new THREE.Mesh(new THREE.ConeGeometry(.2, .28, 16), emissive(col, 2.2)); c.position.y = s * .14; c.rotation.x = s > 0 ? Math.PI : 0; core.add(c); }); const ring = new THREE.Mesh(new THREE.TorusGeometry(.22, .025, 6, 24), emissive('#ffffff', 2.6)); ring.rotation.x = Math.PI / 2; core.add(ring); }
+  core.add(glow(col, 1.8, .7));
+  const halo = new THREE.Mesh(new THREE.RingGeometry(.4, .5, 32), basic(col, { transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false })); halo.rotation.x = -Math.PI / 2; halo.position.y = .03; g.add(halo);
+  g.position.set(x, 0, z); world.add(g); pickups.push({ g, core, type, halo });
+}
+function maybePowerup(gemsBefore) {
+  if (RUN.mode === 'stage' && RUN.dist / stageOf().len < .12) return;
+  if (Math.random() > (RUN.puGuarantee ? 1 : .14)) return;
+  const newGems = gems.slice(gemsBefore); if (!newGems.length) return;
+  const g = newGems[newGems.length - 1]; world.remove(g.g); gems.splice(gems.indexOf(g), 1); RUN.gemsSpawned--;
+  const types = Object.keys(PU); makePickup(RUN.puGuarantee ? 'shield' : pick(types), g.g.position.x, g.g.position.z); RUN.puGuarantee = false;
+}
+function grabPickup(p) {
+  const P = PU[p.type]; AU.warp(); burst(p.g.position.clone().setY(.6), new THREE.Color(P.c).getHex(), 18, 5);
+  pop(`${P.e} ${P.name}!`, P.c, new THREE.Vector3(RUN.bx, 1.3, 0)); tip('power');
+  if (p.type === 'shield') RUN.shield = 1;
+  if (p.type === 'magnet') RUN.magT = 8;
+  if (p.type === 'slow') RUN.slowT = 4.5;
+  renderPU();
+}
+function renderPU() {
+  const el = $('#pus'); const parts = [];
+  if (RUN.shield) parts.push(`<span style="--c:${PU.shield.c}">🛡️</span>`);
+  if (RUN.magT > 0) parts.push(`<span style="--c:${PU.magnet.c}">🧲<i>${Math.ceil(RUN.magT)}</i></span>`);
+  if (RUN.slowT > 0) parts.push(`<span style="--c:${PU.slow.c}">⏳<i>${Math.ceil(RUN.slowT)}</i></span>`);
+  el.innerHTML = parts.join('');
+}
+/* shield bubble + overdrive aura on the ball */
+const bubble = new THREE.Mesh(new THREE.SphereGeometry(R * 1.9, 24, 16), new THREE.MeshBasicMaterial({ color: '#2ef2ff', transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false }));
+const bubbleW = new THREE.Mesh(new THREE.IcosahedronGeometry(R * 1.95, 1), new THREE.MeshBasicMaterial({ color: '#bff8ff', wireframe: true, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false }));
+ball.add(bubble); ball.add(bubbleW);
+const odAura = glow(0xffc23d, 2.6, 0); ball.add(odAura);
+/* overdrive */
+function addMeter(v) { if (RUN.odT > 0) return; RUN.od = Math.min(1, RUN.od + v); if (RUN.od >= 1 && !RUN.odReady) { RUN.odReady = true; AU.zoneUp(); tip('overdrive'); } renderMeter(); }
+function renderMeter() { $('#odfill').style.width = (RUN.odT > 0 ? RUN.odT / 3.5 : RUN.od) * 100 + '%'; $('#odbtn').classList.toggle('ready', RUN.odReady && RUN.odT <= 0 && RUN.state === 'play'); $('#odwrap').classList.toggle('live', RUN.odT > 0); }
+function triggerOD() {
+  if (!RUN.odReady || RUN.odT > 0 || RUN.state !== 'play') return;
+  RUN.odReady = false; RUN.od = 0; RUN.odT = 3.5; RUN.odSlow = .45; flash(); shake(.35); AU.overdrive();
+  banner('', 'OVERDRIVE', 'Smash through everything · x2 points', '#ffc23d'); if (navigator.vibrate) navigator.vibrate([30, 30, 60]);
+  ballU.a.value.set('#ff9a00'); ballU.b.value.set('#fff27a'); ballU.rim.value.set('#ffffff'); ballU.hue.value = 0;
+  renderMeter();
+}
+function endOD() { applySkin(); renderMeter(); }
+function smash(o) {
+  burst(new THREE.Vector3(o.x, .6, o.z), pal.ob.getHex(), 22, 9); burst(new THREE.Vector3(o.x, .6, o.z), 0xffc23d, 10, 6);
+  world.remove(o.g); disposeObj(o.g); obs.splice(obs.indexOf(o), 1);
+  const pts = 50 * RUN.combo; RUN.score += pts; pop(`SMASH +${pts}`, '#ffc23d', new THREE.Vector3(RUN.bx, 1.2, 0)); AU.boom(); shake(.2);
+}
+/* first-time tips */
+const TIPS = {
+  steer: { i: '👆', t: 'Hold & slide', s: 'Drag left and right to steer the orb' },
+  graze: { i: '⚡', t: 'Graze for points', s: 'Pass close to obstacles without touching them. Chain grazes for combos' },
+  gem: { i: '◆', t: 'Grab gems', s: 'Gems unlock new orbs in the menu' },
+  power: { i: '🛡️', t: 'Power-ups', s: 'Shield saves you once · Magnet pulls gems · Slow-mo buys time' },
+  overdrive: { i: '🔥', t: 'OVERDRIVE ready!', s: 'Tap the glowing button to smash through everything' }
+};
+let tipT = null;
+function tip(k, force) {
+  save.tips = save.tips || {};
+  if (save.tips[k] && !force) return; save.tips[k] = 1; store();
+  const T_ = TIPS[k], el = $('#tip');
+  el.innerHTML = `<div class="ti">${T_.i}</div><div><b>${T_.t}</b><span>${T_.s}</span></div>${k === 'steer' ? '<div class="hand">👆</div>' : ''}`;
+  el.classList.add('show'); clearTimeout(tipT); tipT = setTimeout(() => el.classList.remove('show'), k === 'steer' ? 4200 : 3600);
+}
+$('#odbtn').addEventListener('pointerdown', e => { e.stopPropagation(); triggerOD(); });
+addEventListener('keydown', e => { if (e.key === 'Shift' || e.key === 'f' || e.key === 'F') triggerOD(); });
+AU.zoneUp = function () { if (!this.ctx) return; const t = this.ctx.currentTime; [440, 554, 659, 880].forEach((f, i) => this.osc(f, t + i * .06, 'square', .05, .18)); };
+AU.overdrive = function () { if (!this.ctx) return; const t = this.ctx.currentTime; this.osc(110, t, 'sawtooth', .25, .8, null, 880); this.nz(t, 'highpass', 2000, .2, .5); };
+AU.shieldHit = function () { if (!this.ctx) return; const t = this.ctx.currentTime; this.osc(880, t, 'triangle', .2, .4, null, 220); };
 
 </script>
 </body>
