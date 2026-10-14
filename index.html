@@ -258,11 +258,11 @@ const T = { t: 0 };
 
 /* glow billboard (curved) */
 const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.22, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
-const GLOW_V = `uniform vec2 uCurve; varying vec2 vUv;
+const GLOW_V = `uniform vec2 uCurve; varying vec2 vUv; varying float vFade;
   void main(){ vUv = uv; vec4 c = modelMatrix * vec4(0.0,0.0,0.0,1.0); float cz = min(c.z, 0.0); c.x += uCurve.x*cz*cz; c.y += uCurve.y*cz*cz;
-    float s = length(modelMatrix[0].xyz); vec4 mv = viewMatrix * c; mv.xy += position.xy * s; gl_Position = projectionMatrix * mv; }`;
-const GLOW_F = `uniform vec3 color; uniform float opacity; uniform sampler2D map; varying vec2 vUv;
-  void main(){ float a = texture2D(map, vUv).a * opacity; gl_FragColor = vec4(color * a, a); }`;
+    float s = length(modelMatrix[0].xyz); vec4 mv = viewMatrix * c; vFade = smoothstep(2.5, 5.0, -mv.z); mv.xy += position.xy * s; gl_Position = projectionMatrix * mv; }`;
+const GLOW_F = `uniform vec3 color; uniform float opacity; uniform sampler2D map; varying vec2 vUv; varying float vFade;
+  void main(){ float a = texture2D(map, vUv).a * opacity * vFade; gl_FragColor = vec4(color * a, a); }`;
 const glowGeo = new THREE.PlaneGeometry(1, 1); glowGeo.userData.keep = 1;
 function glow(color, size, op = 1) {
   const mat = new THREE.ShaderMaterial({ uniforms: { uCurve: curveU, color: { value: new THREE.Color(color) }, opacity: { value: op }, map: { value: glowTex } }, vertexShader: GLOW_V, fragmentShader: GLOW_F, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -1152,13 +1152,13 @@ function frame(now) {
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i]; p.g.position.z += mv; p.core.rotation.y += dt * 2.5; p.core.position.y = .7 + Math.sin(T.t * 3 + i) * .1; p.halo.scale.setScalar(1 + Math.sin(T.t * 5) * .1);
     if (RUN.state === 'play' && Math.hypot(p.g.position.x - RUN.bx, p.g.position.z) < .75) { grabPickup(p); world.remove(p.g); pickups.splice(i, 1); continue; }
-    if (p.g.position.z > 10) { world.remove(p.g); pickups.splice(i, 1); }
+    if (p.g.position.z > 3) { world.remove(p.g); pickups.splice(i, 1); }
   }
   for (let i = gems.length - 1; i >= 0; i--) {
     const g = gems[i]; g.g.position.z += mv;
     if (RUN.magT > 0 && RUN.state === 'play' && g.g.position.z > -14 && g.g.position.z < 2) { g.g.position.x = lerp(g.g.position.x, RUN.bx, rdt * 6); g.g.position.z = lerp(g.g.position.z, 0, rdt * 3); } g.m.rotation.y += dt * 3; g.g.position.y = g.y + Math.sin(T.t * 4 + i) * .08;
     if (RUN.state === 'play' && Math.hypot(g.g.position.x - RUN.bx, g.g.position.z) < .65) { RUN.gems++; tip('gem'); addMeter(.04); const pts = 10 * RUN.combo * (RUN.odT > 0 ? 2 : 1); RUN.score += pts; AU.gem(); pop(`◆ +${pts}`, '#ffd23f', g.g.position.clone()); burst(g.g.position.clone(), 0xffd23f, 10, 4); world.remove(g.g); gems.splice(i, 1); updHud(); continue; }
-    if (g.g.position.z > 10) { world.remove(g.g); gems.splice(i, 1); }
+    if (g.g.position.z > 3) { world.remove(g.g); gems.splice(i, 1); }
   }
   // ball
   const prev = RUN.bx; RUN.bx = lerp(RUN.bx, RUN.tx, 1 - Math.pow(.0004, rdt)); RUN.roll += mv / R;
