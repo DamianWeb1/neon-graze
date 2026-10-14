@@ -55,8 +55,8 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .banner.show{animation:ban 3s ease both}
 @keyframes ban{0%{opacity:0;transform:scale(1.25)}12%,78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-24px)}}
 #pops{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
-.pop{position:absolute;font-family:'Chakra Petch',monospace;font-weight:700;font-size:19px;white-space:nowrap;transform:translate(-50%,-50%);animation:popup .9s ease-out forwards;text-shadow:0 0 12px currentColor}
-@keyframes popup{0%{transform:translate(-50%,-50%) scale(.6);opacity:0}20%{transform:translate(-50%,-80%) scale(1.15);opacity:1}100%{transform:translate(-50%,-190%);opacity:0}}
+.pop{position:absolute;font-family:'Chakra Petch',monospace;font-weight:700;font-size:14px;letter-spacing:1px;white-space:nowrap;transform:translate(-50%,0);animation:popup .7s ease-out forwards;text-shadow:0 0 8px currentColor,0 1px 2px rgba(0,0,0,.6);opacity:.95}
+@keyframes popup{0%{transform:translate(-50%,-4px) scale(.8);opacity:0}15%{transform:translate(-50%,0) scale(1);opacity:.95}100%{transform:translate(-50%,26px);opacity:0}}
 .newob{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:'Chakra Petch',monospace;font-weight:700;font-size:16px;letter-spacing:3px;white-space:nowrap;padding:8px 16px;border-radius:999px;background:var(--glass);border:1.5px solid var(--accent);box-shadow:0 0 18px var(--accent);backdrop-filter:blur(6px);animation:newob 2.4s ease both}
 .newob b{color:var(--accent);margin-right:8px}
 @keyframes newob{0%{opacity:0;transform:translate(-50%,-12px) scale(.8)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
@@ -1015,10 +1015,14 @@ function bumpCombo() { RUN.combo = Math.min(10, RUN.combo + 1); RUN.maxCombo = M
 function newPop(name) { const d = document.createElement('div'); d.className = 'newob'; d.innerHTML = `<b>NEW</b>${name}`; $('#pops').appendChild(d); setTimeout(() => d.remove(), 2400); }
 function flash() { const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
 const pv = new THREE.Vector3();
+// feedback text sits BELOW the orb and drifts down, so it never covers the road ahead
+let lastPop = 0;
 function pop(text, color, pos) {
-  pv.copy(pos).project(camera); const x = (pv.x + 1) / 2 * innerWidth, y = (1 - pv.y) / 2 * innerHeight;
-  const d = document.createElement('div'); d.className = 'pop'; d.textContent = text; d.style.color = color; d.style.left = x + 'px'; d.style.top = y + 'px';
-  $('#pops').appendChild(d); setTimeout(() => d.remove(), 950);
+  pv.set(RUN.bx, 0, 0).project(camera); const x = (pv.x + 1) / 2 * innerWidth, y = (1 - pv.y) / 2 * innerHeight + 34;
+  const now = performance.now(), stack = now - lastPop < 350 ? 22 : 0; lastPop = now;
+  const old = $('#pops').querySelectorAll('.pop'); if (old.length > 2) old[0].remove();
+  const d = document.createElement('div'); d.className = 'pop'; d.textContent = text; d.style.color = color; d.style.left = clamp(x, 70, innerWidth - 70) + 'px'; d.style.top = Math.min(y + stack, innerHeight - 70) + 'px';
+  $('#pops').appendChild(d); setTimeout(() => d.remove(), 700);
 }
 function updHud() {
   $('#sc').textContent = Math.floor(RUN.score); $('#gm').textContent = RUN.gems;
