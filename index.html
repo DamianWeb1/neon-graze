@@ -98,6 +98,14 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .btn.alt{background:var(--glass);border:1.5px solid var(--line);box-shadow:0 6px 0 rgba(0,0,0,.4);backdrop-filter:blur(8px)}
 .btn small{display:block;font-family:'Chakra Petch',monospace;font-size:11px;letter-spacing:2px;font-weight:500;color:var(--soft);margin-top:2px}
 .link{background:none;border:0;color:var(--soft);margin-top:12px;font-size:14px;text-decoration:underline}
+.sens{display:flex;align-items:center;gap:6px;margin:6px 0 2px;padding:5px;border-radius:16px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(6px)}
+.sens span{font-family:'Chakra Petch',monospace;font-size:10px;letter-spacing:2px;color:var(--soft);padding:0 6px}
+.sens button{border:0;border-radius:11px;padding:7px 10px;font-family:'Chakra Petch',monospace;font-weight:700;font-size:11px;letter-spacing:1px;background:none;color:var(--soft)}
+.sens button.on{background:var(--accent);color:#120818;box-shadow:0 0 12px var(--accent)}
+#pauseS{background:rgba(8,4,20,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#pauseB{left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));width:38px;height:38px;font-size:12px;letter-spacing:-1px;display:none;z-index:9}
+#countdown{position:absolute;left:0;right:0;top:40%;text-align:center;z-index:11;font-weight:900;font-style:italic;font-size:96px;color:#fff;text-shadow:0 0 30px var(--accent);opacity:0;pointer-events:none}
+#countdown.on{opacity:1;animation:pump .45s ease infinite}
 .credit{margin-top:14px;font-family:'Chakra Petch',monospace;font-size:12px;letter-spacing:2px;color:var(--dim);text-decoration:none}
 .wallet{font-family:'Chakra Petch',monospace;color:var(--gold);font-size:15px;margin-top:6px}
 .title2{font-weight:900;font-style:italic;font-size:30px;letter-spacing:1px;margin:0 0 4px}
@@ -168,6 +176,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
     <button class="btn" id="bPlay">PLAY<small id="bPlaySub">STAGE 1</small></button>
     <button class="btn alt" id="bEndless">ENDLESS<small id="bEndSub">BEST 0</small></button>
     <button class="btn alt" id="bSkins">ORBS<small id="bSkinSub">◆ 0</small></button>
+    <div class="sens"></div>
     <a class="credit" href="https://x.com/liamxbtt" target="_blank" rel="noopener">made by @liamxbtt</a>
   </div>
   <div class="screen" id="map"><div class="title2">SELECT WORLD</div><div class="sub2" id="mapSub"></div><div class="stages" id="stages"></div><button class="link" data-back>Back</button></div>
@@ -187,6 +196,10 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
     <div class="stats"><div class="stat"><b id="fBest">0</b><span>BEST</span></div><div class="stat"><b id="fGraze">0</b><span>GRAZES</span></div><div class="stat"><b id="fGems">0</b><span>GEMS</span></div></div>
     <button class="btn" id="fAgain">TRY AGAIN</button><button class="link" id="fMenu">Menu</button>
   </div>
+  <div class="screen" id="pauseS"><div class="title2">PAUSED</div><div class="sub2">TAKE A BREATH</div>
+    <button class="btn" id="pResume">RESUME</button><button class="btn alt" id="pRestart">RESTART</button><div class="sens"></div><button class="link" id="pMenu">Quit to menu</button></div>
+  <div id="countdown"></div>
+  <button class="corner" id="pauseB" aria-label="Pause">❚❚</button>
   <button class="corner" id="mute" aria-label="Toggle sound">🔊</button>
 </div>
 <script>
@@ -970,7 +983,7 @@ function banner(top, name, hint, color) {
   $('#banTop').textContent = top; $('#banName').textContent = name; $('#banName').style.color = color; $('#banHint').textContent = hint; $('#banHint').style.display = hint ? '' : 'none';
   const b = $('#banner'); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
 }
-function show(id) { ['menu', 'map', 'skinsS', 'ready', 'clear', 'fail'].forEach(s => $('#' + s).classList.toggle('show', s === id)); $('#hud').classList.toggle('on', !id || id === 'ready'); }
+function show(id) { ['menu', 'map', 'skinsS', 'ready', 'clear', 'fail', 'pauseS'].forEach(s => $('#' + s).classList.toggle('show', s === id)); $('#hud').classList.toggle('on', !id || id === 'ready'); $('#pauseB').style.display = !id ? 'grid' : 'none'; }
 function prepare(mode, si) {
   AU.init(); clearWorld();
   Object.assign(RUN, { lastPU: -999, od: 0, odReady: false, odT: 0, odSlow: 1, shield: 0, magT: 0, slowT: 0, invT: 0, puGuarantee: !(save.tips && save.tips.power), seen: {}, mode, si, state: 'ready', speed: 4, dist: 0, score: 0, gems: 0, gemsSpawned: 0, grazes: 0, combo: 1, maxCombo: 1, comboT: 0, nextSpawn: -30, bx: 0, tx: 0, lv: 0, pull: 0 });
@@ -1084,10 +1097,10 @@ function down(e) {
   dragging = true; dragX0 = e.clientX; bx0 = RUN.tx;
   if (RUN.state === 'ready') go();
 }
-function move(e) { if (!dragging || RUN.state !== 'play') return; const sens = Math.max(1.6, 3.3 * 380 / innerWidth); RUN.tx = clamp(bx0 + (e.clientX - dragX0) / innerWidth * TW * sens, -HB, HB); }
+function move(e) { if (!dragging || RUN.state !== 'play') return; const sens = Math.max(1.6, 3.3 * 380 / innerWidth) * ({ low: .7, normal: 1, high: 1.4 }[save.sens || 'normal']); RUN.tx = clamp(bx0 + (e.clientX - dragX0) / innerWidth * TW * sens, -HB, HB); }
 cv.addEventListener('pointerdown', down); $('#ready').addEventListener('pointerdown', down);
 addEventListener('pointermove', move); addEventListener('pointerup', () => dragging = false); addEventListener('pointercancel', () => dragging = false);
-addEventListener('keydown', e => { keys[e.key] = 1; if (e.key === ' ' || e.key === 'Enter') { if (RUN.state === 'ready') go(); else if (RUN.state === 'over') prepare(RUN.mode, RUN.si); } });
+addEventListener('keydown', e => { keys[e.key] = 1; if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { RUN.state === 'play' ? pauseGame() : RUN.state === 'paused' && resumeGame(); } if (e.key === ' ' || e.key === 'Enter') { if (RUN.state === 'ready') go(); else if (RUN.state === 'over') prepare(RUN.mode, RUN.si); } });
 addEventListener('keyup', e => keys[e.key] = 0);
 
 /* ================= loop ================= */
@@ -1100,7 +1113,7 @@ function frame(now) {
   const rdt = Math.min(.05, (now - last) / 1000); last = now;
   if (fpsProbe && RUN.state === 'play') { fpsProbe.t += rdt; fpsProbe.n++; if (fpsProbe.t > 4) { const fps = fpsProbe.n / fpsProbe.t; if (fps < 38 && composer) { composer = null; PR = Math.min(PR, 1.25); renderer.setPixelRatio(PR); resize(); } fpsProbe = null; } }
   slowmo = lerp(slowmo, RUN.state === 'dead' ? .12 : 1, RUN.state === 'dead' ? .25 : .06);
-  const dt = rdt * slowmo; T.t += dt;
+  const dt = RUN.state === 'paused' ? 0 : rdt * slowmo; T.t += dt;
   const st = stageOf();
   // gameplay
   if (RUN.state === 'play') {
@@ -1199,6 +1212,30 @@ function frame(now) {
 }
 applySkin(); setEnv(0, true); renderMenu();
 requestAnimationFrame(frame);
+
+/* ================= pause + steering sensitivity ================= */
+function pauseGame() {
+  if (RUN.state !== 'play') return;
+  RUN.state = 'paused'; dragging = false; if (AU.music) AU.music.gain.setTargetAtTime(.12, AU.ctx.currentTime, .05);
+  renderSens(); show('pauseS');
+}
+let resumeT = null;
+function resumeGame() {
+  if (RUN.state !== 'paused') return;
+  show(null); const c = $('#countdown'); let n = 3; c.textContent = n; c.classList.add('on');
+  clearInterval(resumeT); resumeT = setInterval(() => { n--; if (n > 0) { c.textContent = n; AU.click && AU.osc && AU.ctx && AU.osc(660, AU.ctx.currentTime, 'square', .04, .08); }
+    else { clearInterval(resumeT); c.classList.remove('on'); RUN.state = 'play'; if (AU.music) AU.music.gain.setTargetAtTime(.55, AU.ctx.currentTime, .1); } }, 450);
+}
+function renderSens() {
+  document.querySelectorAll('.sens').forEach(box => box.innerHTML = '<span>STEERING</span>' + ['low', 'normal', 'high'].map(k => `<button data-sens="${k}" class="${(save.sens || 'normal') === k ? 'on' : ''}">${k.toUpperCase()}</button>`).join(''));
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-sens]'); if (!b) return; save.sens = b.dataset.sens; store(); renderSens(); });
+$('#pauseB').addEventListener('pointerdown', e => { e.stopPropagation(); pauseGame(); });
+$('#pResume').onclick = resumeGame;
+$('#pRestart').onclick = () => { $('#countdown').classList.remove('on'); clearInterval(resumeT); prepare(RUN.mode, RUN.si); };
+$('#pMenu').onclick = () => { clearInterval(resumeT); AU.stop(); toMenu(); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+renderSens();
 /* ================= overdrive, power-ups, tutorial ================= */
 const PU = { shield: { e: '🛡️', name: 'SHIELD', c: '#2ef2ff' }, magnet: { e: '🧲', name: 'MAGNET', c: '#ff4f6a' }, slow: { e: '⏳', name: 'SLOW-MO', c: '#b98cff' } };
 const pickups = [];
